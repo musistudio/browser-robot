@@ -11,6 +11,7 @@ app.use(bodyParser.json({ limit: '10240kb' }));
 app.use(bodyParser.urlencoded({ limit: '10240kb' }));
 app.use(express.static('./'));
 
+// 查找插件
 function findPlugin(service) {
   let plugins = Plugins.filter((plg) => plg.service == service);
   return plugins.length ? plugins[0] : null;
@@ -31,7 +32,7 @@ io.on('connection', (socket) => {
     console.log('snowboy: ' + msg.cmd);
   });
   // 赋予插件websocket能力，使其能直接与前端进行交互
-  SLUGS = Plugins.map((plugin) => plugin.SLUG);
+  // const SLUGS = Plugins.map((plugin) => plugin.SLUG);
   Plugins.forEach((plugin) => {
     if (plugin.IOHandle && typeof plugin.IOHandle == 'function') {
       socket.on(plugin.SLUG, (msg) => {
@@ -63,9 +64,11 @@ app.post('/nlp', async (req, res) => {
   if (intent) {
     let dts;
     try {
-      plugin = findPlugin(intent.service);
-      plugin && (dts = await plugin.handle(io, text, intent));
-      console.log(`命中插件: ${plugin.SLUG}`);
+      const plugin = findPlugin(intent.service);
+      if(plugin && plugin.handle) {
+        dts = await plugin.handle(io, text, intent)
+        console.log(`命中插件: ${plugin.SLUG}`);
+      }
     } catch (e) {
       console.log(e);
     }
